@@ -36,7 +36,7 @@ RUN gcc -c -I./e2sm/headers -I./e2sm -I./e2sm/lib ./e2sm/wrapper.c ./e2sm/lib/*.
     rm -f *.o
 
 # 6. Compila o binário em Go linkando a biblioteca estática recém-criada
-RUN CGO_ENABLED=1 GOOS=linux go build -o testar-e2sim .
+RUN CGO_ENABLED=1 GOOS=linux go build -o xapp_sctp .
 
 # Estágio final (runtime enxuto)
 FROM debian:bookworm-slim
@@ -48,10 +48,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /root/
 
 COPY --from=builder /usr/local/lib/librmr_si.so* /usr/local/lib/
-COPY --from=builder /app/testar-e2sim .
+COPY --from=builder /app/xapp_sctp .
 COPY config/ ./config/
 
 ENV LD_LIBRARY_PATH=/usr/local/lib
 ENV CFG_FILE=/root/config/config.json
 
-CMD ["./testar-e2sim"]
+CMD ["./xapp_sctp"]

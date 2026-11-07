@@ -1,3 +1,3 @@
 apiVersion: v2
-name: testar-e2sim-xapp
+name: xapp-sctp
 version: 1.0.0

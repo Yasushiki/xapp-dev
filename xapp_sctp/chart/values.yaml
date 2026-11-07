@@ -1,4 +1,4 @@
 image:
-  repository: testar-e2sim
+  repository: xapp-sctp
   tag: latest
   pullPolicy: Never

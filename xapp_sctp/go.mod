@@ -1,4 +1,4 @@
-module testar-e2sim
+module xapp_sctp
 
 go 1.22.0
 

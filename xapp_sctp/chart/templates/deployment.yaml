@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: testar-e2sim
+  name: xapp-sctp
   namespace: ricxapp
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: testar-e2sim
+      app: xapp-sctp 
   template:
     metadata:
       labels:
-        app: testar-e2sim
+        app: xapp-sctp 
     spec:
       containers:
-      - name: testar-e2sim
-        image: testar-e2sim:latest
+      - name: xapp-sctp
+        image: xapp-sctp:latest
         imagePullPolicy: Never
         env:
         - name: DBAAS_SERVICE_HOST
@@ -25,7 +25,7 @@ spec:
         - name: RMR_RTG_SVC
           value: "service-ricplt-rtmgr-rmr.ricplt.svc.cluster.local:4561"
         - name: RMR_SRC_ID
-          value: "service-ricxapp-testar-e2sim-rmr.ricxapp"
+          value: "service-ricxapp-xapp-sctp-rmr.ricxapp"
         - name: RMR_SEED_RT
           value: "/root/config/uta_rtg.rt"
         - name: CFG_FILE

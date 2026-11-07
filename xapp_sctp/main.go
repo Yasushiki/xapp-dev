@@ -9,7 +9,7 @@ import (
 	"gerrit.o-ran-sc.org/r/ric-plt/xapp-frame/pkg/xapp"
 
 	// wrapper do ASN.1 pro Go (copiado do kpimon-go)
-	"testar-e2sim/control"
+	"xapp_sctp/control"
 )
 
 const (
