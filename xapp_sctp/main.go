@@ -17,11 +17,11 @@ const (
 	ranFunctionID = 0
 )
 
-type TestarE2simXapp struct {
+type XappSCTP struct {
 	e2ap *control.E2ap
 }
 
-func (e *TestarE2simXapp) Consume(msg *xapp.RMRParams) (err error) {
+func (e *XappSCTP) Consume(msg *xapp.RMRParams) (err error) {
 	switch msg.Mtype {
 	case 12050: // RIC_INDICATION (ou xapp.RIC_INDICATION)
 		fmt.Printf("#### Métrica recebida do e2sim. Tamanho: %d bytes\n", msg.PayloadLen)
@@ -123,11 +123,11 @@ func enviarAssinatura() {
 	}
 }
 
-var xAppInst *TestarE2simXapp
+var xAppInst *XappSCTP
 
 func main() {
 	fmt.Printf("#### INICIANDO xApp com suporte Cgo E2AP ####\n")
-	xAppInst = &TestarE2simXapp{
+	xAppInst = &XappSCTP{
 		e2ap: &control.E2ap{},
 	}
 	go enviarAssinatura()
