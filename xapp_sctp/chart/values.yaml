@@ -1,0 +1,4 @@
+image:
+  repository: testar-e2sim
+  tag: latest
+  pullPolicy: Never
