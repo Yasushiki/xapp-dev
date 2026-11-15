@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: service-ricxapp-xapp-sctp-rmr
+  namespace: ricxapp
+spec:
+  type: ClusterIP
+  selector:
+    app: xapp-sctp
+  ports:
+  - name: rmr-data
+    port: 4560
+    targetPort: 4560
+    protocol: TCP
+  - name: rmr-route
+    port: 4561
+    targetPort: 4561
+    protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: service-ricxapp-xapp-sctp-http
+  namespace: ricxapp
+spec:
+  type: ClusterIP
+  selector:
+    app: xapp-sctp
+  ports:
+  - name: http
+    port: 8080
+    targetPort: 8080
+    protocol: TCP
