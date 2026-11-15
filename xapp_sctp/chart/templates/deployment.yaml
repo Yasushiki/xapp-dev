@@ -7,16 +7,23 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: xapp-sctp 
+      app: xapp-sctp
   template:
     metadata:
       labels:
-        app: xapp-sctp 
+        app: xapp-sctp
     spec:
       containers:
       - name: xapp-sctp
         image: xapp-sctp:latest
         imagePullPolicy: Never
+        ports:
+        - name: http
+          containerPort: 8080
+        - name: rmr-data
+          containerPort: 4560
+        - name: rmr-route
+          containerPort: 4561
         env:
         - name: DBAAS_SERVICE_HOST
           value: "service-ricplt-dbaas-tcp.ricplt.svc.cluster.local"
