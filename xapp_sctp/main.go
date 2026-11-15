@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	ranName       = "gnb_001_001_b5c67788"
+	ranName       = "gnb_001_001_00000e00"
 	ranFunctionID = 0
 )
 
