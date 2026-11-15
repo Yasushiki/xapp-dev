@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 FROM golang:1.22 AS builder
 
 # 1. Instala ferramentas de build
@@ -20,23 +21,27 @@ RUN find /usr -name "RIC_message_types.h" -exec sh -c 'echo "\n#ifndef RIC_SUB_D
 
 WORKDIR /app
 
-COPY go.mod go.sum ./
-RUN go mod download
-
-COPY . .
-
-# 4. COMPILAÇÃO DO C: Compila os arquivos C do E2AP e gera a biblioteca estática libe2ap.a
-RUN gcc -c -I./e2ap/headers -I./e2ap -I./e2ap/lib ./e2ap/wrapper.c ./e2ap/lib/*.c -fPIC && \
+# 4. COMPILAÇÃO DO E2AP (Isolada: só roda de novo se a pasta e2ap/ mudar)
+COPY e2ap/ ./e2ap/
+RUN mkdir -p /app/control && \
+    gcc -c -I./e2ap/headers -I./e2ap -I./e2ap/lib ./e2ap/wrapper.c ./e2ap/lib/*.c -fPIC && \
     ar rcs /app/control/libe2ap.a *.o && \
     rm -f *.o
 
-# 5. COMPILAÇÃO DO C: Compila os arquivos C do E2SM e gera a biblioteca estática libe2sm.a
+# 5. COMPILAÇÃO DO E2SM (Isolada: só roda de novo se a pasta e2sm/ mudar)
+COPY e2sm/ ./e2sm/
 RUN gcc -c -I./e2sm/headers -I./e2sm -I./e2sm/lib ./e2sm/wrapper.c ./e2sm/lib/*.c -fPIC && \
     ar rcs /app/control/libe2sm.a *.o && \
     rm -f *.o
 
-# 6. Compila o binário em Go linkando a biblioteca estática recém-criada
-RUN CGO_ENABLED=1 GOOS=linux go build -o xapp_sctp .
+# 6. Dependências Go (só roda de novo se go.mod ou go.sum mudarem)
+COPY go.mod go.sum ./
+RUN go mod download
+
+# 7. Copia o código Go e compila usando cache do BuildKit
+COPY . .
+RUN --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=1 GOOS=linux go build -o xapp_sctp .
 
 # Estágio final (runtime enxuto)
 FROM debian:bookworm-slim
@@ -50,6 +55,7 @@ WORKDIR /root/
 COPY --from=builder /usr/local/lib/librmr_si.so* /usr/local/lib/
 COPY --from=builder /app/xapp_sctp .
 COPY config/ ./config/
+COPY config/config.json /opt/ric/config/config-file.json
 
 ENV LD_LIBRARY_PATH=/usr/local/lib
 ENV CFG_FILE=/root/config/config.json
