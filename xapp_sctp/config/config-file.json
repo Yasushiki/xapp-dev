@@ -1,6 +1,10 @@
 {
+  "name": "xapp-sctp",
   "xapp_name": "xapp-sctp",
   "version": "1.0.0",
+  "logger": {
+    "level": 4
+  },
   "containers": [
     {
       "name": "xapp-sctp",

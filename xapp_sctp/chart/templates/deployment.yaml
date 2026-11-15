@@ -13,6 +13,7 @@ spec:
       labels:
         app: xapp-sctp
     spec:
+      hostname: xapp-sctp
       containers:
       - name: xapp-sctp
         image: xapp-sctp:latest
@@ -24,6 +25,18 @@ spec:
           containerPort: 4560
         - name: rmr-route
           containerPort: 4561
+        readinessProbe:
+          httpGet:
+            path: /ric/v1/health/ready
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /ric/v1/health/alive
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 15
         env:
         - name: DBAAS_SERVICE_HOST
           value: "service-ricplt-dbaas-tcp.ricplt.svc.cluster.local"
