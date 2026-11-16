@@ -14,8 +14,17 @@ import (
 
 const (
 	ranName       = "gnb_001_001_00000e00"
-	ranFunctionID = 0
+	ranFunctionID = 2
 )
+
+var subResposta = make(chan struct{}, 1)
+
+func sinalizarResposta() {
+	select {
+	case subResposta <- struct{}{}:
+	default:
+	}
+}
 
 type XappSCTP struct {
 	e2ap *control.E2ap
@@ -35,33 +44,36 @@ func (e *XappSCTP) Consume(msg *xapp.RMRParams) (err error) {
 
 	case 12011: // RIC_SUB_RESP
 		fmt.Printf("#### [SUCESSO] Assinatura confirmada pelo e2sim\n")
+		sinalizarResposta()
 	case 12012: // RIC_SUB_FAILURE
 		fmt.Printf("#### [ERRO] Erro da assinatura no e2sim | Payload (hex): %s\n", hex.EncodeToString(msg.Payload))
+		sinalizarResposta()
+
 	default:
 		fmt.Printf("#### Mensagem RMR recebida (Tipo: %d)\n", msg.Mtype)
 	}
 	return nil
 }
 
-func montarPayload(e2ap *control.E2ap) ([]byte, error) {
-	// 1. Aloca um buffer inicial para o Cgo preencher o payload codificado
+func montarPayload(e2ap *control.E2ap, seq uint16) ([]byte, error) {
+	// Aloca um buffer inicial para o Cgo preencher o payload codificado
 	payloadBuf := make([]byte, 2048)
 
 	var ricRequestorID uint16 = 42069
-	var ricRequestSequenceNumber uint16 = 1101
-	var ranFuncID uint16 = ranFunctionID // 0
+	var ricRequestSequenceNumber uint16 = seq
+	var ranFuncID uint16 = ranFunctionID // 2
 
-	// 2. Buffer do Event Trigger Definition (não pode ser nil ou vazio)
-	eventTriggerDefinition := []byte{0x00, 0x00, 0x04, 0x00}
+	// Buffer do Event Trigger Definition (não pode ser nil ou vazio)
+	eventTriggerDefinition := []byte{0x08, 0x03, 0xe7}
 	eventTriggerSize := len(eventTriggerDefinition)
 
-	// 3. Parâmetros das Ações (1 ação configurada)
+	// Parâmetros das Ações (1 ação configurada)
 	actionCount := 1
 	actionIds := []int64{1}
 	actionTypes := []int64{0} // 0 = ActionType Report
 
-	// 4. FIX: Define a variável de bytes e a passa para o slice, garantindo Size > 0
-	actionDefBytes := []byte{0x00, 0x01}
+	// FIX: Define a variável de bytes e a passa para o slice, garantindo Size > 0
+	actionDefBytes := []byte{0x00, 0x01, 0x04, 0x80, 0x6d, 0x00, 0x00, 0x00, 0x38, 0x40, 0x01, 0x00, 0x04, 0x01, 0x01, 0x00, 0x00, 0x04, 0x01, 0x00, 0x44, 0x52, 0x42, 0x2e, 0x52, 0x6c, 0x63, 0x53, 0x64, 0x75, 0x44, 0x65, 0x6c, 0x61, 0x79, 0x44, 0x6c, 0x01, 0x20, 0x00, 0x00, 0x00, 0xa0, 0x44, 0x52, 0x42, 0x2e, 0x55, 0x45, 0x54, 0x68, 0x70, 0x44, 0x6c, 0x01, 0x20, 0x00, 0x00, 0x00, 0xa0, 0x44, 0x52, 0x42, 0x2e, 0x55, 0x45, 0x54, 0x68, 0x70, 0x55, 0x6c, 0x01, 0x20, 0x00, 0x00, 0x00, 0xb0, 0x52, 0x52, 0x55, 0x2e, 0x50, 0x72, 0x62, 0x54, 0x6f, 0x74, 0x44, 0x6c, 0x01, 0x20, 0x00, 0x00, 0x00, 0xb0, 0x52, 0x52, 0x55, 0x2e, 0x50, 0x72, 0x62, 0x54, 0x6f, 0x74, 0x55, 0x6c, 0x01, 0x20, 0x00, 0x00, 0x40, 0x03, 0xe7}
 
 	actionDefinitions := []control.ActionDefinition{
 		{
@@ -72,7 +84,7 @@ func montarPayload(e2ap *control.E2ap) ([]byte, error) {
 
 	subsequentActions := make([]control.SubsequentAction, actionCount)
 
-	// 5. Chamada do wrapper Cgo
+	// Chamada do wrapper Cgo
 	payload, err := e2ap.SetSubscriptionRequestPayload(
 		payloadBuf,
 		ricRequestorID,
@@ -99,28 +111,47 @@ func enviarAssinatura() {
 		time.Sleep(1 * time.Second)
 	}
 
-	payload, err := montarPayload(xAppInst.e2ap)
-	if err != nil {
-		fmt.Printf("#### [ERRO] Falha ao codificar RICsubscriptionRequest: %v\n", err)
-		return
-	}
-	fmt.Printf("#### RICsubscriptionRequest (%d bytes): %s\n", len(payload), hex.EncodeToString(payload))
+	fmt.Printf("#### Aguardando 15s para o registro e para as rotas\n")
+	time.Sleep(15 * time.Second)
 
-	fmt.Printf("#### Enviando RIC_SUB_REQ (12010) para o e2sim\n")
+	for tentativa := 0; tentativa < 5; tentativa++ {
+		seq := uint16(1101 + tentativa)
 
-	params := &xapp.RMRParams{
-		Mtype:      12010, // RIC_SUB_REQ
-		SubId:      -1,
-		Payload:    payload,
-		PayloadLen: len(payload),
-		Meid:       &xapp.RMRMeid{RanName: ranName},
+		payload, err := montarPayload(xAppInst.e2ap, seq)
+		if err != nil {
+			fmt.Printf("#### [ERRO] Falha ao codificar RICsubscriptionRequest: %v\n", err)
+			return
+		}
+		fmt.Printf("#### RICsubscriptionRequest tentativa %d (%d bytes): %s\n",
+			tentativa+1, len(payload), hex.EncodeToString(payload))
+
+		fmt.Printf("#### Enviando RIC_SUB_REQ (12010) para o e2sim\n")
+
+		params := &xapp.RMRParams{
+			Mtype:      12010, // RIC_SUB_REQ
+			SubId:      -1,
+			Payload:    payload,
+			PayloadLen: len(payload),
+			Meid:       &xapp.RMRMeid{RanName: ranName},
+		}
+
+		if ok := xapp.Rmr.SendMsg(params); !ok {
+			fmt.Printf("#### [ERRO] Falha ao enviar mensagem RMR (SendMsg retornou false)\n")
+		} else {
+			fmt.Printf("#### [SUCESSO] Mensagem enviada com sucesso ao RMR\n")
+		}
+
+		select {
+		case <-subResposta:
+			fmt.Printf("#### [SUCESSO] Resposta recebida, encerrando tentativas\n")
+			return
+		case <-time.After(20 * time.Second):
+			fmt.Printf("#### Sem resposta em 20s, nova tenativa\n")
+		}
 	}
 
-	if ok := xapp.Rmr.SendMsg(params); !ok {
-		fmt.Printf("#### [ERRO] Falha ao enviar mensagem RMR (SendMsg retornou false)\n")
-	} else {
-		fmt.Printf("#### [SUCESSO] Mensagem enviada com sucesso ao RMR\n")
-	}
+	fmt.Printf("#### [ERRO] Sem resposta após 5 tentativas. Verificar logs do submgr e do e2term\n")
+
 }
 
 var xAppInst *XappSCTP
