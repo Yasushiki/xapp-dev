@@ -8,10 +8,7 @@ O xApp utiliza o wrapper de ASN.1 do kpimon-go, com pouca modificação.
 
 Também utiliza bytes hardcoded gerados por `asn1/gerar_kpm.py` para a ActionDefitinion. `eventTriggerDefinition` indica o período entre relatórios. `actionDefBytes` indica o estilo e formato da ActionDefinition, filtra as UEs e indica quais métricas serão enviadas pela DU
 
-
-
-
-
+---
 
 ### possivelmente precisa fazer um port-forwarding
 kubectl port-forward -n ricplt svc/service-ricplt-appmgr-http 8080:8080
