@@ -40,6 +40,8 @@ func (e *XappSCTP) Consume(msg *xapp.RMRParams) (err error) {
 			fmt.Printf("#### [ERRO] Erro ao decodificar RIC_INDICATION: %v\n", err)
 		} else {
 			fmt.Printf("#### [SUCESSO] RIC_INDICATION decodificada: %+v\n", decodedMsg)
+			fmt.Printf("#### IndMessage hex: %s\n", hex.EncodeToString(decodedMsg.IndMessage))
+			fmt.Printf("#### IndHeader hex:  %s\n", hex.EncodeToString(decodedMsg.IndHeader))
 		}
 
 	case 12011: // RIC_SUB_RESP
