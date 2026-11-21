@@ -33,7 +33,7 @@ type XappSCTP struct {
 func (e *XappSCTP) Consume(msg *xapp.RMRParams) (err error) {
 	switch msg.Mtype {
 	case 12050: // RIC_INDICATION (ou xapp.RIC_INDICATION)
-		fmt.Printf("#### Métrica recebida do e2sim. Tamanho: %d bytes\n", msg.PayloadLen)
+		fmt.Printf("#### Métrica recebida da DU. Tamanho: %d bytes\n", msg.PayloadLen)
 
 		decodedMsg, err := e.e2ap.GetIndicationMessage(msg.Payload)
 		if err != nil {
@@ -43,10 +43,10 @@ func (e *XappSCTP) Consume(msg *xapp.RMRParams) (err error) {
 		}
 
 	case 12011: // RIC_SUB_RESP
-		fmt.Printf("#### [SUCESSO] Assinatura confirmada pelo e2sim\n")
+		fmt.Printf("#### [SUCESSO] Assinatura confirmada pela DU\n")
 		sinalizarResposta()
 	case 12012: // RIC_SUB_FAILURE
-		fmt.Printf("#### [ERRO] Erro da assinatura no e2sim | Payload (hex): %s\n", hex.EncodeToString(msg.Payload))
+		fmt.Printf("#### [ERRO] Erro da assinatura na DU | Payload (hex): %s\n", hex.EncodeToString(msg.Payload))
 		sinalizarResposta()
 
 	default:
@@ -125,7 +125,7 @@ func enviarAssinatura() {
 		fmt.Printf("#### RICsubscriptionRequest tentativa %d (%d bytes): %s\n",
 			tentativa+1, len(payload), hex.EncodeToString(payload))
 
-		fmt.Printf("#### Enviando RIC_SUB_REQ (12010) para o e2sim\n")
+		fmt.Printf("#### Enviando RIC_SUB_REQ (12010)\n")
 
 		params := &xapp.RMRParams{
 			Mtype:      12010, // RIC_SUB_REQ
